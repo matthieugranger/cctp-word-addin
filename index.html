@@ -4,130 +4,84 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CCTP Assistant IA - Multi-Modèles</title>
-  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-<style>
+ <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
     :root {
-      --bleu-tech: #0052CC;
-      --bleu-clair: #E8F0FE;
-      --bleu-fonce: #003087;
-      --gris-100: #F7F8FA;
-      --gris-200: #EAECEF;
-      --gris-400: #9AA3B0;
-      --gris-700: #3D4450;
-      --noir: #1A1E2B;
-      --vert: #0A7655;
-      --vert-clair: #E6F4EF;
-      --orange: #B84800;
-      --orange-clair: #FDF0E6;
-      --rouge: #C0392B;
-      --rouge-clair: #FDECEA;
-      --bordure: #D0D5DD;
+      --bleu-tech: #0052CC; --bleu-clair: #E8F0FE; --bleu-fonce: #003087;
+      --gris-100: #F7F8FA; --gris-200: #EAECEF; --gris-400: #9AA3B0;
+      --gris-700: #3D4450; --noir: #1A1E2B; --vert: #0A7655;
+      --vert-clair: #E6F4EF; --orange: #B84800; --orange-clair: #FDF0E6;
+      --rouge: #C0392B; --rouge-clair: #FDECEA; --bordure: #D0D5DD;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 13px;
-      color: var(--noir);
-      background: var(--gris-100);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden; /* Empêche le scroll sur le body pour garder header/footer fixes */
+      font-size: 13px; color: var(--noir); background: var(--gris-100);
+      height: 100vh; display: flex; flex-direction: column;
+      overflow: hidden; /* Empêche le scroll sur le body */
     }
 
-    /* ── HEADER ── */
+    /* HEADER FIXE */
     .header {
-      background: var(--bleu-fonce);
-      color: white;
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
+      background: var(--bleu-fonce); color: white; padding: 12px 14px;
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
       border-bottom: 3px solid var(--bleu-tech);
     }
     .header-logo {
-      width: 28px; height: 28px;
-      background: var(--bleu-tech);
-      border-radius: 6px;
+      width: 28px; height: 28px; background: var(--bleu-tech); border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 700; color: white;
-      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
     }
-    .header-title { font-size: 13px; font-weight: 600; line-height: 1.2; }
-    .header-sub { font-size: 10px; color: rgba(255,255,255,0.65); margin-top: 1px; }
 
-    /* ── CONFIGURATION MULTI-API ── */
+    /* CONFIGURATION FIXE */
     #api-setup {
-      background: #fff;
-      border-bottom: 1px solid var(--bordure);
-      padding: 12px 14px;
-      flex-shrink: 0;
+      background: white; border-bottom: 1px solid var(--bordure);
+      padding: 12px 14px; flex-shrink: 0;
     }
-    .api-config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-    .api-field { display: flex; flex-direction: column; gap: 4px; }
-    .api-label { font-size: 10px; font-weight: 700; color: var(--gris-700); text-transform: uppercase; }
-    .api-input { 
+    .api-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .label { font-size: 10px; font-weight: 700; color: var(--gris-700); text-transform: uppercase; }
+    .input { 
       padding: 6px; font-size: 11px; border: 1px solid var(--bordure); border-radius: 4px;
       font-family: 'IBM Plex Sans', sans-serif;
     }
-    #api-key-input { font-family: 'IBM Plex Mono', monospace; width: 100%; }
 
-    /* ── ZONE DE SCROLL PRINCIPALE ── */
+    /* ZONE DE SCROLL PRINCIPALE */
     .main { 
-      flex: 1; 
-      overflow-y: auto; 
-      padding: 12px 14px; 
-      display: flex; 
-      flex-direction: column; 
-      gap: 12px; 
-      min-height: 0; 
+      flex: 1; overflow-y: auto; padding: 12px 14px; 
+      display: flex; flex-direction: column; gap: 12px;
+      min-height: 0; /* Fix pour le défilement dans Word/Edge */
     }
 
-    /* ── DESIGN DES CARTES (Repris de votre original) ── */
-    .card { background: white; border: 1px solid var(--bordure); border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .card-header { padding: 8px 12px; background: var(--gris-100); border-bottom: 1px solid var(--bordure); font-size: 11px; font-weight: 600; color: var(--gris-700); text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+    /* CARDS & COMPONENTS */
+    .card { background: white; border: 1px solid var(--bordure); border-radius: 6px; overflow: hidden; }
+    .card-header { padding: 8px 12px; background: var(--gris-100); border-bottom: 1px solid var(--bordure); font-size: 11px; font-weight: 600; color: var(--gris-700); text-transform: uppercase; }
     .card-body { padding: 12px; }
 
-    /* Boutons de Contexte */
     .context-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .ctx-btn { padding: 8px; border: 1px solid var(--bordure); border-radius: 5px; background: white; font-size: 11px; cursor: pointer; text-align: left; transition: all 0.15s; }
+    .ctx-btn { padding: 8px; border: 1px solid var(--bordure); border-radius: 5px; background: white; font-size: 11px; cursor: pointer; text-align: left; }
     .ctx-btn.active { border-color: var(--bleu-tech); background: var(--bleu-clair); color: var(--bleu-fonce); font-weight: 600; }
-    .ctx-icon { display: block; font-size: 14px; margin-bottom: 2px; }
 
-    /* Onglets de Mode */
     .mode-tabs { display: flex; border-bottom: 1px solid var(--bordure); background: var(--gris-100); }
-    .mode-tab { flex: 1; padding: 10px 6px; border: none; background: transparent; font-size: 11px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--gris-400); font-weight: 500; }
-    .mode-tab.active { color: var(--bleu-tech); border-bottom-color: var(--bleu-tech); background: white; font-weight: 600; }
+    .mode-tab { flex: 1; padding: 10px; border: none; background: transparent; font-size: 11px; cursor: pointer; color: var(--gris-400); }
+    .mode-tab.active { color: var(--bleu-tech); border-bottom: 2px solid var(--bleu-tech); background: white; font-weight: 600; }
 
-    /* Input et Boutons */
-    #input-text { width: 100%; padding: 10px; border: 1px solid var(--bordure); border-radius: 5px; font-size: 12px; line-height: 1.6; min-height: 100px; resize: vertical; }
-    .btn-primary { flex: 1; padding: 10px; background: var(--bleu-tech); color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; }
-    .btn-primary:disabled { background: var(--gris-400); cursor: not-allowed; }
-    .btn-secondary { padding: 10px; background: white; border: 1px solid var(--bordure); border-radius: 5px; cursor: pointer; font-size: 12px; }
-
-    /* Résultats et Badges */
-    #result-text { background: var(--gris-100); border: 1px solid var(--bordure); border-radius: 5px; padding: 12px; font-size: 12px; white-space: pre-wrap; line-height: 1.6; }
-    .suggestion-card { border: 1px solid var(--bordure); border-radius: 5px; margin-bottom: 8px; background: white; }
-    .suggestion-header { padding: 8px 10px; background: var(--gris-100); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--bordure); }
-    .suggestion-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
-    .badge-critique { background: var(--rouge-clair); color: var(--rouge); }
-    .badge-amelioration { background: var(--orange-clair); color: var(--orange); }
-
-    /* Status Bar */
-    #status-bar { padding: 6px 12px; font-size: 10.5px; border-top: 1px solid var(--bordure); background: white; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    textarea { width: 100%; padding: 10px; border: 1px solid var(--bordure); border-radius: 5px; font-size: 12px; min-height: 100px; resize: none; }
+    .btn-primary { width: 100%; padding: 10px; background: var(--bleu-tech); color: white; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; }
+    
+    /* STATUS BAR */
+    #status-bar { padding: 6px 12px; font-size: 10px; border-top: 1px solid var(--bordure); background: white; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; }
     .ok .status-dot { background: var(--vert); }
-    .err .status-dot { background: var(--rouge); }
 
-    .spinner { width: 16px; height: 16px; border: 2px solid var(--bleu-clair); border-top-color: var(--bleu-tech); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Custom Scrollbar */
+    .main::-webkit-scrollbar { width: 6px; }
+    .main::-webkit-scrollbar-thumb { background: var(--gris-200); border-radius: 10px; }
   </style>
-
 </head>
 <body>
 
