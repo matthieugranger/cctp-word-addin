@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CCTP Assistant IA</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bleu-tech: #0052CC;
+      --bleu-clair: #E8F0FE;
+      --bleu-fonce: #003087;
+      --gris-100: #F7F8FA;
+      --gris-200: #EAECEF;
+      --gris-400: #9AA3B0;
+      --gris-700: #3D4450;
+      --noir: #1A1E2B;
+      --vert: #0A7655;
+      --vert-clair: #E6F4EF;
+      --orange: #B84800;
+      --orange-clair: #FDF0E6;
+      --rouge: #C0392B;
+      --rouge-clair: #FDECEA;
+      --bordure: #D0D5DD;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      color: var(--noir);
+      background: var(--gris-100);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--bleu-fonce);
+      color: white;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      border-bottom: 3px solid var(--bleu-tech);
+    }
+    .header-logo {
+      width: 28px; height: 28px;
+      background: var(--bleu-tech);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: white;
+      font-family: 'IBM Plex Mono', monospace;
+      flex-shrink: 0;
+    }
+    .header-title { font-size: 13px; font-weight: 600; line-height: 1.2; }
+    .header-sub { font-size: 10px; color: rgba(255,255,255,0.65); margin-top: 1px; }
+
+    /* ── API KEY BANNER ── */
+    #api-setup {
+      background: var(--orange-clair);
+      border-bottom: 1px solid #F5CBA7;
+      padding: 10px 14px;
+      flex-shrink: 0;
+    }
+    #api-setup p { font-size: 11px; color: var(--orange); margin-bottom: 6px; font-weight: 500; }
+    .api-row { display: flex; gap: 6px; }
+    #api-key-input {
+      flex: 1; padding: 5px 8px; font-size: 11px;
+      border: 1px solid #F5CBA7; border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      background: white; color: var(--noir);
+    }
+    #save-api-btn {
+      padding: 5px 10px; font-size: 11px; font-weight: 600;
+      background: var(--orange); color: white; border: none;
+      border-radius: 4px; cursor: pointer; white-space: nowrap;
+    }
+    #save-api-btn:hover { background: #963D00; }
+
+    /* ── MAIN SCROLL AREA ── */
+    .main { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── SECTION CARD ── */
+    .card {
+      background: white;
+      border: 1px solid var(--bordure);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 8px 12px;
+      background: var(--gris-100);
+      border-bottom: 1px solid var(--bordure);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gris-700);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-body { padding: 12px; }
+
+    /* ── CONTEXT SELECTOR ── */
+    .context-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .ctx-btn {
+      padding: 6px 8px;
+      border: 1px solid var(--bordure);
+      border-radius: 5px;
+      background: white;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 11px;
+      color: var(--gris-700);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+      line-height: 1.3;
+    }
+    .ctx-btn:hover { border-color: var(--bleu-tech); background: var(--bleu-clair); color: var(--bleu-tech); }
+    .ctx-btn.active { border-color: var(--bleu-tech); background: var(--bleu-clair); color: var(--bleu-fonce); font-weight: 600; }
+    .ctx-btn .ctx-icon { font-size: 13px; display: block; margin-bottom: 2px; }
+
+    /* ── MODES ── */
+    .mode-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--bordure);
+      background: var(--gris-100);
+    }
+    .mode-tab {
+      flex: 1; padding: 8px 6px;
+      border: none; background: transparent;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 11px; font-weight: 500;
+      color: var(--gris-400); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .mode-tab:hover { color: var(--bleu-tech); }
+    .mode-tab.active {
+      color: var(--bleu-tech);
+      border-bottom-color: var(--bleu-tech);
+      background: white;
+      font-weight: 600;
+    }
+
+    /* ── INPUT AREA ── */
+    #input-text {
+      width: 100%; padding: 10px;
+      border: 1px solid var(--bordure);
+      border-radius: 5px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12px; line-height: 1.6;
+      color: var(--noir); resize: vertical;
+      min-height: 90px;
+      background: white;
+    }
+    #input-text:focus { outline: none; border-color: var(--bleu-tech); }
+    #input-text::placeholder { color: var(--gris-400); }
+
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; }
+
+    .btn-primary {
+      flex: 1; padding: 9px 12px;
+      background: var(--bleu-tech); color: white;
+      border: none; border-radius: 5px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--bleu-fonce); }
+    .btn-primary:disabled { background: var(--gris-400); cursor: not-allowed; }
+
+    .btn-secondary {
+      padding: 9px 12px;
+      background: white; color: var(--gris-700);
+      border: 1px solid var(--bordure);
+      border-radius: 5px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-secondary:hover { border-color: var(--bleu-tech); color: var(--bleu-tech); background: var(--bleu-clair); }
+
+    /* ── RESULT ── */
+    #result-container { display: none; }
+    #result-text {
+      background: var(--gris-100);
+      border: 1px solid var(--bordure);
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--noir);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .result-actions { display: flex; gap: 6px; margin-top: 8px; }
+
+    .btn-insert {
+      flex: 1; padding: 8px;
+      background: var(--vert); color: white;
+      border: none; border-radius: 5px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-insert:hover { background: #085C42; }
+
+    .btn-replace {
+      flex: 1; padding: 8px;
+      background: white; color: var(--vert);
+      border: 1.5px solid var(--vert);
+      border-radius: 5px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-replace:hover { background: var(--vert-clair); }
+
+    .btn-copy {
+      padding: 8px 10px;
+      background: white; color: var(--gris-700);
+      border: 1px solid var(--bordure);
+      border-radius: 5px;
+      font-size: 11px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s;
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+    .btn-copy:hover { border-color: var(--bleu-tech); color: var(--bleu-tech); background: var(--bleu-clair); }
+
+    /* ── SUGGESTIONS MODE ── */
+    #suggestions-list { display: flex; flex-direction: column; gap: 8px; }
+    .suggestion-card {
+      border: 1px solid var(--bordure);
+      border-radius: 5px;
+      overflow: hidden;
+      background: white;
+    }
+    .suggestion-header {
+      padding: 7px 10px;
+      display: flex; align-items: center; gap: 6px;
+      background: var(--gris-100);
+      border-bottom: 1px solid var(--bordure);
+    }
+    .suggestion-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 6px; border-radius: 3px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-critique { background: var(--rouge-clair); color: var(--rouge); }
+    .badge-amelioration { background: var(--orange-clair); color: var(--orange); }
+    .badge-complement { background: var(--bleu-clair); color: var(--bleu-tech); }
+    .suggestion-title { font-size: 11px; font-weight: 600; color: var(--gris-700); }
+    .suggestion-body { padding: 8px 10px; font-size: 11px; line-height: 1.6; color: var(--noir); }
+    .suggestion-body code {
+      font-family: 'IBM Plex Mono', monospace;
+      background: var(--bleu-clair); color: var(--bleu-fonce);
+      padding: 1px 5px; border-radius: 3px; font-size: 10.5px;
+    }
+
+    /* ── LOADING ── */
+    #loading { display: none; align-items: center; gap: 10px; padding: 12px; }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--bleu-clair);
+      border-top-color: var(--bleu-tech);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-text { font-size: 12px; color: var(--gris-700); font-style: italic; }
+
+    /* ── STATUS ── */
+    #status-bar {
+      padding: 6px 12px;
+      font-size: 10.5px;
+      display: flex; align-items: center; gap: 6px;
+      flex-shrink: 0;
+      border-top: 1px solid var(--bordure);
+      background: white;
+      color: var(--gris-400);
+    }
+    #status-bar.ok { color: var(--vert); }
+    #status-bar.err { color: var(--rouge); }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+    /* ── CHAR COUNT ── */
+    .char-info {
+      display: flex; justify-content: space-between;
+      margin-top: 4px;
+      font-size: 10px;
+      color: var(--gris-400);
+    }
+
+    /* ── OPTIONS ── */
+    .option-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .option-label { font-size: 11px; color: var(--gris-700); white-space: nowrap; }
+    select.option-select {
+      flex: 1; padding: 5px 8px;
+      border: 1px solid var(--bordure); border-radius: 4px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 11px; color: var(--noir);
+      background: white; cursor: pointer;
+    }
+    select.option-select:focus { outline: none; border-color: var(--bleu-tech); }
+
+    /* scrollbar */
+    .main::-webkit-scrollbar { width: 4px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: var(--gris-200); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">CC</div>
+  <div>
+    <div class="header-title">CCTP Assistant IA</div>
+    <div class="header-sub">Rédaction technique — Marchés publics</div>
+  </div>
+</div>
+
+<!-- API KEY SETUP -->
+<div id="api-setup">
+  <p>⚠ Clé API Anthropic requise pour activer l'assistant IA</p>
+  <div class="api-row">
+    <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." />
+    <button id="save-api-btn" onclick="saveApiKey()">Enregistrer</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- CONTEXTE -->
+  <div class="card">
+    <div class="card-header">📐 Type de lot / prestation</div>
+    <div class="card-body">
+      <div class="context-grid">
+        <button class="ctx-btn active" data-ctx="genie-civil" onclick="selectContext(this)">
+          <span class="ctx-icon">🏗</span>Génie civil &amp; Gros œuvre
+        </button>
+        <button class="ctx-btn" data-ctx="electricite" onclick="selectContext(this)">
+          <span class="ctx-icon">⚡</span>Électricité &amp; CFO/CFA
+        </button>
+        <button class="ctx-btn" data-ctx="cvc" onclick="selectContext(this)">
+          <span class="ctx-icon">🌡</span>CVC &amp; Plomberie
+        </button>
+        <button class="ctx-btn" data-ctx="vrd" onclick="selectContext(this)">
+          <span class="ctx-icon">🛣</span>VRD &amp; Aménagement
+        </button>
+        <button class="ctx-btn" data-ctx="facades" onclick="selectContext(this)">
+          <span class="ctx-icon">🪟</span>Façades &amp; Menuiseries
+        </button>
+        <button class="ctx-btn" data-ctx="generique" onclick="selectContext(this)">
+          <span class="ctx-icon">📋</span>CCTP générique
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTIL PRINCIPAL -->
+  <div class="card">
+    <!-- TABS -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="reformulation" onclick="switchMode(this)">✏️ Reformuler</button>
+      <button class="mode-tab" data-mode="suggestions" onclick="switchMode(this)">💡 Suggestions</button>
+      <button class="mode-tab" data-mode="verification" onclick="switchMode(this)">✔ Vérifier</button>
+    </div>
+
+    <div class="card-body">
+
+      <!-- TEXTAREA -->
+      <textarea id="input-text" placeholder="Collez ici le paragraphe ou la clause à analyser…&#10;&#10;Vous pouvez aussi sélectionner du texte dans Word et cliquer sur « Importer la sélection »."></textarea>
+      <div class="char-info">
+        <span id="char-count">0 caractères</span>
+        <span id="word-count">0 mots</span>
+      </div>
+
+      <!-- OPTIONS SELON MODE -->
+      <div id="options-reformulation" class="option-row">
+        <span class="option-label">Niveau de reformulation :</span>
+        <select class="option-select" id="refLevel">
+          <option value="leger">Léger – structure conservée</option>
+          <option value="modere" selected>Modéré – clarté améliorée</option>
+          <option value="complet">Complet – réécriture professionnelle</option>
+        </select>
+      </div>
+      <div id="options-suggestions" class="option-row" style="display:none">
+        <span class="option-label">Focus analyse :</span>
+        <select class="option-select" id="sugFocus">
+          <option value="complet">Complet (juridique + technique)</option>
+          <option value="juridique">Juridique &amp; réglementaire</option>
+          <option value="technique">Précision technique</option>
+          <option value="ambiguites">Ambiguïtés &amp; lacunes</option>
+        </select>
+      </div>
+      <div id="options-verification" class="option-row" style="display:none">
+        <span class="option-label">Référentiel :</span>
+        <select class="option-select" id="verRef">
+          <option value="ccag-travaux">CCAG Travaux 2021</option>
+          <option value="ccag-pi">CCAG PI 2021</option>
+          <option value="ccag-ti">CCAG TIC 2021</option>
+          <option value="general">Marchés publics (général)</option>
+        </select>
+      </div>
+
+      <!-- BOUTONS -->
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="importSelection()">📥 Importer</button>
+        <button class="btn-primary" id="run-btn" onclick="runAnalysis()" disabled>
+          <span id="run-label">▶ Analyser</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading" class="card">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px">
+      <div class="spinner"></div>
+      <span id="loading-text">Analyse en cours…</span>
+    </div>
+  </div>
+
+  <!-- RÉSULTAT REFORMULATION / VÉRIFICATION -->
+  <div id="result-container" class="card">
+    <div class="card-header">📄 Résultat</div>
+    <div class="card-body">
+      <div id="result-text"></div>
+      <div class="result-actions">
+        <button class="btn-insert" onclick="insertResult()">➕ Insérer après</button>
+        <button class="btn-replace" onclick="replaceSelection()">↔ Remplacer</button>
+        <button class="btn-copy" onclick="copyResult()">📋 Copier</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RÉSULTAT SUGGESTIONS -->
+  <div id="suggestions-container" class="card" style="display:none">
+    <div class="card-header">💡 Suggestions d'amélioration</div>
+    <div class="card-body" style="padding:8px">
+      <div id="suggestions-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div id="status-bar">
+  <div class="status-dot"></div>
+  <span id="status-text">En attente — configurez votre clé API pour commencer</span>
+</div>
+
+<script>
+// ── STATE ──
+let apiKey = '';
+let currentMode = 'reformulation';
+let currentContext = 'genie-civil';
+let lastResult = '';
+
+// ── INIT ──
+Office.onReady((info) => {
+  if (info.host === Office.HostType.Word) {
+    const saved = localStorage.getItem('cctp_api_key');
+    if (saved) {
+      apiKey = saved;
+      document.getElementById('api-setup').style.display = 'none';
+      document.getElementById('run-btn').disabled = false;
+      setStatus('ok', 'Prêt — clé API configurée');
+    }
+  }
+});
+
+document.getElementById('input-text').addEventListener('input', updateCount);
+
+function updateCount() {
+  const txt = document.getElementById('input-text').value;
+  document.getElementById('char-count').textContent = txt.length + ' caractères';
+  document.getElementById('word-count').textContent = txt.split(/\s+/).filter(Boolean).length + ' mots';
+}
+
+// ── API KEY ──
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key.startsWith('sk-ant-')) { alert('Clé API invalide (doit commencer par sk-ant-)'); return; }
+  apiKey = key;
+  localStorage.setItem('cctp_api_key', key);
+  document.getElementById('api-setup').style.display = 'none';
+  document.getElementById('run-btn').disabled = false;
+  setStatus('ok', 'Clé API enregistrée — prêt');
+}
+
+// ── CONTEXT ──
+function selectContext(btn) {
+  document.querySelectorAll('.ctx-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentContext = btn.dataset.ctx;
+}
+
+// ── MODES ──
+function switchMode(tab) {
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  currentMode = tab.dataset.mode;
+  ['reformulation','suggestions','verification'].forEach(m => {
+    const el = document.getElementById('options-' + m);
+    if (el) el.style.display = m === currentMode ? 'flex' : 'none';
+  });
+  // update run label
+  const labels = { reformulation: '▶ Reformuler', suggestions: '▶ Analyser', verification: '▶ Vérifier' };
+  document.getElementById('run-label').textContent = labels[currentMode];
+  hideResults();
+}
+
+function hideResults() {
+  document.getElementById('result-container').style.display = 'none';
+  document.getElementById('suggestions-container').style.display = 'none';
+}
+
+// ── IMPORT SELECTION ──
+async function importSelection() {
+  try {
+    await Word.run(async (ctx) => {
+      const sel = ctx.document.getSelection();
+      sel.load('text');
+      await ctx.sync();
+      const txt = sel.text.trim();
+      if (txt) {
+        document.getElementById('input-text').value = txt;
+        updateCount();
+        setStatus('ok', 'Texte importé depuis Word (' + txt.length + ' car.)');
+      } else {
+        setStatus('err', 'Aucun texte sélectionné dans Word');
+      }
+    });
+  } catch(e) {
+    setStatus('err', 'Erreur import : ' + e.message);
+  }
+}
+
+// ── CONTEXT LABELS ──
+const contextLabels = {
+  'genie-civil': 'Génie civil, béton armé, charpente métallique, fondations, gros œuvre',
+  'electricite': 'Installations électriques CFO/CFA, tableaux électriques, câblage, éclairage, GTB',
+  'cvc': 'Chauffage, ventilation, climatisation, plomberie sanitaire, réseaux fluides',
+  'vrd': 'Voiries, réseaux divers, assainissement, réseaux secs, aménagement paysager',
+  'facades': 'Façades, menuiseries extérieures, étanchéité, isolation thermique par l\'extérieur',
+  'generique': 'CCTP tout corps d\'état, marché de travaux ou de services'
+};
+
+// ── PROMPTS ──
+function buildPrompt(text) {
+  const ctx = contextLabels[currentContext] || 'CCTP générique';
+  const base = `Tu es un expert en rédaction de Cahiers des Clauses Techniques Particulières (CCTP) pour des marchés publics français. Ton domaine d'expertise couvre : ${ctx}.
+
+RÈGLES ABSOLUES DE RÉDACTION :
+- Style juridique et technique rigoureux, conforme aux usages des marchés publics français
+- Impératifs exprimés à l'infinitif ou au futur de l'indicatif ("L'entrepreneur devra fournir…", "Les travaux comprendront…")
+- Vocabulaire normalisé : référencer les normes NF, DTU, eurocodes, CCTG applicables
+- Précision des prestations : quantités, spécifications, tolérances, conditions d'exécution
+- Obligations légales respectées : loi MOP, code de la commande publique, décrets applicables
+- Éviter toute ambiguïté contractuelle pouvant donner lieu à réclamation
+- Pas de formulations vagues ("si nécessaire", "notamment", "en général") sans justification
+`;
+
+  if (currentMode === 'reformulation') {
+    const level = document.getElementById('refLevel').value;
+    const levelDesc = {
+      leger: 'Correction légère : améliorer la formulation sans modifier la structure. Conserver le sens exact.',
+      modere: 'Reformulation modérée : améliorer la clarté, la précision et le style technique tout en conservant l\'intention.',
+      complet: 'Réécriture complète : produire une rédaction professionnelle de haut niveau, structurée, précise, conforme aux standards CCTP.'
+    };
+    return base + `\nMODE : Reformulation (${levelDesc[level]})\n\nTEXTE À REFORMULER :\n"""\n${text}\n"""\n\nFournis UNIQUEMENT le texte reformulé, sans commentaire ni explication. Respecte les sauts de paragraphe d'origine.`;
+  }
+
+  if (currentMode === 'suggestions') {
+    const focus = document.getElementById('sugFocus').value;
+    const focusDesc = {
+      complet: 'juridiques, réglementaires et techniques',
+      juridique: 'juridiques et réglementaires (obligations légales, responsabilités, garanties, pénalités)',
+      technique: 'techniques (précision des spécifications, normes, tolérances, matériaux)',
+      ambiguites: 'sur les ambiguïtés, lacunes contractuelles et formulations floues'
+    };
+    return base + `\nMODE : Analyse et suggestions (focus : ${focusDesc[focus]})\n\nTEXTE À ANALYSER :\n"""\n${text}\n"""\n\nAnalyse ce texte et fournis des suggestions d'amélioration structurées au format JSON strict :\n{\n  "suggestions": [\n    {\n      "type": "CRITIQUE|AMELIORATION|COMPLEMENT",\n      "titre": "Titre court de la suggestion",\n      "probleme": "Description du problème identifié",\n      "correction": "Formulation corrigée ou ajout proposé (code/texte CCTP)"\n    }\n  ]\n}\n\nRépondre UNIQUEMENT avec le JSON, sans texte avant ou après.`;
+  }
+
+  if (currentMode === 'verification') {
+    const ref = document.getElementById('verRef').value;
+    const refLabels = {
+      'ccag-travaux': 'CCAG Travaux 2021 (arrêté du 30 mars 2021)',
+      'ccag-pi': 'CCAG Prestations Intellectuelles 2021',
+      'ccag-ti': 'CCAG Techniques de l\'Information et de la Communication 2021',
+      'general': 'Code de la commande publique et réglementations générales'
+    };
+    return base + `\nMODE : Vérification réglementaire (référentiel : ${refLabels[ref]})\n\nTEXTE À VÉRIFIER :\n"""\n${text}\n"""\n\nAnalyse la conformité de ce texte vis-à-vis du référentiel et fournis :\n1. Un résumé de conformité (2-3 lignes)\n2. Les points non conformes ou à risque (liste numérotée)\n3. Les corrections recommandées\n\nStyle professionnel, concis, orienté juriste marchés publics.`;
+  }
+}
+
+// ── MAIN RUN ──
+async function runAnalysis() {
+  const text = document.getElementById('input-text').value.trim();
+  if (!text) { setStatus('err', 'Veuillez saisir un texte à analyser'); return; }
+  if (!apiKey) { setStatus('err', 'Clé API manquante'); return; }
+
+  setLoading(true);
+  hideResults();
+
+  const loadingMessages = {
+    reformulation: 'Reformulation en cours par l\'IA…',
+    suggestions: 'Analyse des clauses CCTP en cours…',
+    verification: 'Vérification réglementaire en cours…'
+  };
+  document.getElementById('loading-text').textContent = loadingMessages[currentMode];
+
+  try {
+    const prompt = buildPrompt(text);
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'Erreur API ' + response.status);
+    }
+
+    const data = await response.json();
+    const content = data.content[0].text;
+
+    if (currentMode === 'suggestions') {
+      parseSuggestions(content);
+    } else {
+      lastResult = content;
+      document.getElementById('result-text').textContent = content;
+      document.getElementById('result-container').style.display = 'block';
+    }
+
+    setStatus('ok', 'Analyse terminée avec succès');
+  } catch(e) {
+    setStatus('err', 'Erreur : ' + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── PARSE SUGGESTIONS ──
+function parseSuggestions(raw) {
+  try {
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const data = JSON.parse(clean);
+    const list = document.getElementById('suggestions-list');
+    list.innerHTML = '';
+
+    if (!data.suggestions || !data.suggestions.length) {
+      list.innerHTML = '<p style="font-size:12px;color:var(--vert);padding:8px">✔ Aucun problème majeur identifié dans ce texte.</p>';
+    } else {
+      data.suggestions.forEach(s => {
+        const badgeClass = {
+          'CRITIQUE': 'badge-critique',
+          'AMELIORATION': 'badge-amelioration',
+          'COMPLEMENT': 'badge-complement'
+        }[s.type] || 'badge-complement';
+
+        const typeLabel = {
+          'CRITIQUE': '⚠ Critique',
+          'AMELIORATION': '↑ Amélioration',
+          'COMPLEMENT': '＋ Complément'
+        }[s.type] || s.type;
+
+        const card = document.createElement('div');
+        card.className = 'suggestion-card';
+        card.innerHTML = `
+          <div class="suggestion-header">
+            <span class="suggestion-badge ${badgeClass}">${typeLabel}</span>
+            <span class="suggestion-title">${escHtml(s.titre)}</span>
+          </div>
+          <div class="suggestion-body">
+            <div style="margin-bottom:5px;color:var(--gris-700)">${escHtml(s.probleme)}</div>
+            ${s.correction ? `<div style="margin-top:4px"><code>${escHtml(s.correction)}</code></div>` : ''}
+          </div>`;
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById('suggestions-container').style.display = 'block';
+  } catch(e) {
+    document.getElementById('result-text').textContent = raw;
+    document.getElementById('result-container').style.display = 'block';
+    setStatus('err', 'Parsing JSON échoué, résultat brut affiché');
+  }
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── INSERT / REPLACE ──
+async function insertResult() {
+  if (!lastResult) return;
+  try {
+    await Word.run(async (ctx) => {
+      const sel = ctx.document.getSelection();
+      sel.insertParagraphAfter(lastResult, Word.InsertLocation.after);
+      await ctx.sync();
+      setStatus('ok', 'Texte inséré après la sélection');
+    });
+  } catch(e) { setStatus('err', 'Erreur insertion : ' + e.message); }
+}
+
+async function replaceSelection() {
+  if (!lastResult) return;
+  try {
+    await Word.run(async (ctx) => {
+      const sel = ctx.document.getSelection();
+      sel.insertText(lastResult, Word.InsertLocation.replace);
+      await ctx.sync();
+      setStatus('ok', 'Texte remplacé avec succès');
+    });
+  } catch(e) { setStatus('err', 'Erreur remplacement : ' + e.message); }
+}
+
+async function copyResult() {
+  try {
+    await navigator.clipboard.writeText(lastResult);
+    setStatus('ok', 'Copié dans le presse-papiers');
+  } catch(e) {
+    setStatus('err', 'Erreur copie');
+  }
+}
+
+// ── HELPERS ──
+function setLoading(on) {
+  document.getElementById('loading').style.display = on ? 'block' : 'none';
+  document.getElementById('run-btn').disabled = on;
+}
+
+function setStatus(type, msg) {
+  const bar = document.getElementById('status-bar');
+  bar.className = type === 'ok' ? 'ok' : type === 'err' ? 'err' : '';
+  document.getElementById('status-text').textContent = msg;
+}
+</script>
+</body>
+</html>
