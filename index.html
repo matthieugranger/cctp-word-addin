@@ -52,11 +52,33 @@
     .header-title { font-size: 13px; font-weight: 600; line-height: 1.2; }
     .header-sub   { font-size: 10px; color: rgba(255,255,255,.6); margin-top: 1px; }
 
+    #cfg-toggle {
+      width: 28px; height: 28px; flex-shrink: 0;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 6px; color: white; font-size: 14px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+      line-height: 1;
+    }
+    #cfg-toggle:hover { background: rgba(255,255,255,.22); }
+    #cfg-toggle.active { background: var(--blue); border-color: var(--blue); }
+
     /* ── CONFIG PANEL ── */
     #api-setup {
       background: white; border-bottom: 1px solid var(--border);
       padding: 10px 14px; flex-shrink: 0;
       display: flex; flex-direction: column; gap: 8px;
+      overflow: hidden;
+      max-height: 200px;
+      transition: max-height .25s ease, padding .25s ease, opacity .2s ease;
+      opacity: 1;
+    }
+    #api-setup.collapsed {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      opacity: 0;
+      pointer-events: none;
     }
     .cfg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .cfg-col { display: flex; flex-direction: column; gap: 4px; }
@@ -155,17 +177,19 @@
     .main::-webkit-scrollbar-thumb { background: var(--g200); border-radius: 10px; }
 
     /* ── CARD ── */
-    .card { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .card { background: white; border: 1px solid var(--border); border-radius: var(--radius); }
+    /* NB: pas de overflow:hidden — les focus-ring et dropdowns doivent déborder */
     .card-header {
       padding: 7px 12px; background: var(--g100);
       border-bottom: 1px solid var(--border);
       font-size: 10.5px; font-weight: 700; color: var(--g700);
       text-transform: uppercase; letter-spacing: .05em;
+      border-radius: var(--radius) var(--radius) 0 0;
     }
     .card-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 
     /* ── MODE TABS ── */
-    .mode-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--g100); }
+    .mode-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--g100); border-radius: var(--radius) var(--radius) 0 0; overflow: hidden; }
     .mode-tab {
       flex: 1; padding: 9px 6px;
       border: none; border-bottom: 2px solid transparent;
@@ -246,10 +270,11 @@
 
 <div class="header">
   <div class="header-logo">CC</div>
-  <div>
+  <div style="flex:1">
     <div class="header-title">CCTP Assistant IA</div>
     <div class="header-sub">Rédaction technique — Multi-IA</div>
   </div>
+  <button id="cfg-toggle" title="Afficher / masquer la configuration">⚙</button>
 </div>
 
 <div id="api-setup">
@@ -358,6 +383,7 @@ function bindUI() {
   document.querySelectorAll('.mode-tab').forEach(function(tab) {
     tab.addEventListener('click', function() { switchMode(tab); });
   });
+  document.getElementById('cfg-toggle').addEventListener('click', toggleConfig);
   document.getElementById('api-provider').addEventListener('change', onProviderChange);
   document.getElementById('save-api-btn').addEventListener('click', saveApiConfig);
   document.getElementById('run-btn').addEventListener('click', runAnalysis);
@@ -366,6 +392,14 @@ function bindUI() {
   document.getElementById('replace-btn').addEventListener('click', replaceSelection);
   document.getElementById('copy-btn').addEventListener('click', copyResult);
   loadConfig();
+}
+
+function toggleConfig() {
+  var panel  = document.getElementById('api-setup');
+  var btn    = document.getElementById('cfg-toggle');
+  var hidden = panel.classList.toggle('collapsed');
+  btn.classList.toggle('active', !hidden);
+  btn.title = hidden ? 'Afficher la configuration' : 'Masquer la configuration';
 }
 
 // Attendre que Office.js soit prêt, ou démarrer sans lui si absent
