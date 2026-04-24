@@ -178,7 +178,6 @@
 
     /* ── CARD ── */
     .card { background: white; border: 1px solid var(--border); border-radius: var(--radius); }
-    /* NB: pas de overflow:hidden — les focus-ring et dropdowns doivent déborder */
     .card-header {
       padding: 7px 12px; background: var(--g100);
       border-bottom: 1px solid var(--border);
@@ -254,6 +253,13 @@
     .suggestion-body { padding: 8px 10px; font-size: 11.5px; line-height: 1.6; }
     .suggestion-body code { font-family: 'IBM Plex Mono', monospace; background: var(--blue-light); color: var(--blue-dark); padding: 1px 5px; border-radius: 3px; font-size: 10.5px; }
 
+    /* ── IMPORT INDICATOR ── */
+    .import-indicator {
+      font-size: 10px; color: var(--green); font-style: italic;
+      padding: 2px 0; display: none;
+    }
+    .import-indicator.visible { display: block; }
+
     /* ── STATUS BAR ── */
     #status-bar {
       padding: 6px 12px; font-size: 10.5px;
@@ -311,6 +317,7 @@
     </div>
     <div class="card-body">
       <textarea id="input-text" placeholder="Collez votre texte CCTP ici…"></textarea>
+      <div id="import-indicator" class="import-indicator"></div>
 
       <div id="options-reformulation">
         <div class="sel-wrap">
@@ -369,6 +376,13 @@ var currentProvider = 'anthropic';
 var currentMode = 'reformulation';
 var lastResult = '';
 
+// FIX : on stocke le texte sélectionné ET l'id du paragraphe/range pour pouvoir
+// retrouver la position lors des actions Word ultérieures.
+// Comme Office.js ne permet pas de garder un Range entre deux Word.run(),
+// on stocke le texte original de la sélection pour le retrouver par recherche.
+var lastImportedText = '';   // texte brut importé depuis Word
+var officeReady = false;     // true une fois Office.onReady() résolu
+
 var DEFAULT_MODELS = {
   anthropic:  'claude-sonnet-4-20250514',
   groq:       'llama-3.3-70b-versatile',
@@ -376,9 +390,6 @@ var DEFAULT_MODELS = {
 };
 
 // ── INIT ──
-// Office.js définit `Office` de manière asynchrone après son chargement.
-// On utilise un guard pour éviter "Office is not defined" si le script
-// n'est pas encore prêt, ou si la page est ouverte hors du contexte Word.
 function bindUI() {
   document.querySelectorAll('.mode-tab').forEach(function(tab) {
     tab.addEventListener('click', function() { switchMode(tab); });
@@ -392,7 +403,6 @@ function bindUI() {
   document.getElementById('replace-btn').addEventListener('click', replaceSelection);
   document.getElementById('copy-btn').addEventListener('click', copyResult);
   loadConfig();
-  startSelectionListener();
 }
 
 function toggleConfig() {
@@ -403,12 +413,18 @@ function toggleConfig() {
   btn.title = hidden ? 'Afficher la configuration' : 'Masquer la configuration';
 }
 
-// Attendre que Office.js soit prêt, ou démarrer sans lui si absent
+// ── OFFICE INIT ──
+// On attend Office.onReady() avant tout. Si le script n'est pas dans Word,
+// on démarre quand même sans les fonctionnalités Office.
 window.addEventListener('load', function() {
   if (typeof Office !== 'undefined' && typeof Office.onReady === 'function') {
-    Office.onReady(function() { bindUI(); });
+    Office.onReady(function(info) {
+      officeReady = true;
+      bindUI();
+      // Démarrer le listener de sélection une fois Office prêt
+      startSelectionListener();
+    });
   } else {
-    // Hors contexte Word (navigateur seul) : démarrer directement
     bindUI();
   }
 });
@@ -476,60 +492,105 @@ function hideResults() {
   document.getElementById('suggestions-container').style.display = 'none';
 }
 
-// ── SELECTION EN TEMPS REEL ──
-// On ecoute les changements de selection dans Word en permanence.
-// Cela evite le probleme de perte de focus lors du clic sur le bouton.
-var lastWordSelection = '';
-
+// ── LISTENER DE SELECTION EN TEMPS REEL ──
+// FIX : utilise Word.run() pour lire la sélection — plus fiable que
+// getSelectedDataAsync() car indépendant du focus au moment du clic.
+// On met à jour l'indicateur visuel à chaque changement de sélection.
 function startSelectionListener() {
-  if (typeof Office === 'undefined' || !Office.context || !Office.context.document) return;
-  Office.context.document.addHandlerAsync(
-    Office.EventType.DocumentSelectionChanged,
-    function() {
-      Office.context.document.getSelectedDataAsync(
-        Office.CoercionType.Text,
-        { valueFormat: Office.ValueFormat.Unformatted },
-        function(result) {
-          if (result.status === Office.AsyncResultStatus.Succeeded) {
-            var txt = (result.value || '').trim();
-            lastWordSelection = txt;
-            // Indicateur visuel discret sur le bouton
-            var btn = document.getElementById('import-btn');
-            if (btn) btn.title = txt ? 'Selection : ' + txt.substring(0, 60) + (txt.length > 60 ? '...' : '') : 'Aucune selection';
-          }
+  if (!officeReady || typeof Office === 'undefined') return;
+  if (!Office.context || !Office.context.document) return;
+
+  try {
+    Office.context.document.addHandlerAsync(
+      Office.EventType.DocumentSelectionChanged,
+      function() {
+        // FIX : utiliser Word.run pour lire la sélection (ne dépend pas du focus)
+        if (typeof Word !== 'undefined') {
+          Word.run(function(ctx) {
+            var range = ctx.document.getSelection();
+            range.load('text');
+            return ctx.sync().then(function() {
+              var txt = (range.text || '').trim();
+              updateImportIndicator(txt);
+            });
+          }).catch(function() {
+            // Silencieux — peut échouer si rien n'est sélectionné
+          });
         }
-      );
-    }
-  );
+      }
+    );
+  } catch(e) {
+    // Pas dans Word, on ignore
+  }
+}
+
+function updateImportIndicator(txt) {
+  var el = document.getElementById('import-indicator');
+  if (!el) return;
+  if (txt && txt.length > 0) {
+    var preview = txt.length > 70 ? txt.substring(0, 70) + '…' : txt;
+    el.textContent = '✓ Sélection Word : « ' + preview + ' »';
+    el.classList.add('visible');
+  } else {
+    el.textContent = '';
+    el.classList.remove('visible');
+  }
 }
 
 // ── IMPORT WORD ──
+// FIX PRINCIPAL : utiliser Word.run() + context.document.getSelection()
+// C'est la seule méthode fiable quand le focus est dans le panneau taskpane.
+// getSelectedDataAsync() échoue souvent car elle lit la sélection "active"
+// au moment de l'appel, qui peut avoir changé avec le changement de focus.
 function importSelection() {
-  if (typeof Office === 'undefined' || !Office.context || !Office.context.document) {
+  if (!officeReady || typeof Office === 'undefined' || !Office.context) {
     setStatus('err', 'Fonction disponible uniquement dans Word');
     return;
   }
-  // Lecture directe au moment du clic (fiable car dans le meme tick)
-  Office.context.document.getSelectedDataAsync(
-    Office.CoercionType.Text,
-    { valueFormat: Office.ValueFormat.Unformatted },
-    function(result) {
-      var txt = '';
-      if (result.status === Office.AsyncResultStatus.Succeeded) {
-        txt = (result.value || '').trim();
-      }
-      // Fallback : utiliser la derniere selection connue
-      if (!txt && lastWordSelection) {
-        txt = lastWordSelection;
-      }
+
+  if (typeof Word === 'undefined') {
+    setStatus('err', 'API Word (Word.run) non disponible');
+    return;
+  }
+
+  setStatus('', 'Lecture de la sélection…');
+
+  Word.run(function(ctx) {
+    var range = ctx.document.getSelection();
+    range.load('text');
+    return ctx.sync().then(function() {
+      var txt = (range.text || '').trim();
       if (txt) {
+        lastImportedText = txt;
         document.getElementById('input-text').value = txt;
-        setStatus('ok', 'Texte importe (' + txt.length + ' car.)');
+        updateImportIndicator(txt);
+        setStatus('ok', 'Texte importé (' + txt.length + ' car.)');
       } else {
-        setStatus('err', 'Selectionnez du texte dans Word puis cliquez Importer');
+        setStatus('err', 'Aucun texte sélectionné dans Word');
       }
-    }
-  );
+    });
+  }).catch(function(e) {
+    // Fallback vers getSelectedDataAsync si Word.run échoue
+    Office.context.document.getSelectedDataAsync(
+      Office.CoercionType.Text,
+      { valueFormat: Office.ValueFormat.Unformatted },
+      function(result) {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          var txt = (result.value || '').trim();
+          if (txt) {
+            lastImportedText = txt;
+            document.getElementById('input-text').value = txt;
+            updateImportIndicator(txt);
+            setStatus('ok', 'Texte importé (' + txt.length + ' car.)');
+          } else {
+            setStatus('err', 'Sélectionnez du texte dans Word puis cliquez Importer');
+          }
+        } else {
+          setStatus('err', 'Erreur import : ' + (e.message || 'inconnue'));
+        }
+      }
+    );
+  });
 }
 
 // ── PROMPT ──
@@ -683,66 +744,119 @@ function esc(str) {
 }
 
 // ── WORD ACTIONS ──
-// Utilise setSelectedDataAsync pour ecrire dans Word :
-// plus fiable que Word.run pour les operations sur la selection courante.
 
+// FIX "Insérer après" :
+// setSelectedDataAsync remplace la sélection, elle ne peut pas insérer "après".
+// On utilise Word.run() + insertText(After) pour vraiment insérer après le texte sélectionné.
+// Si lastImportedText est défini, on retrouve le range par recherche pour être sûr de
+// cibler le bon endroit même si la sélection a bougé.
 function insertResult() {
-  if (!lastResult) return;
-  if (typeof Office === 'undefined' || !Office.context || !Office.context.document) {
+  if (!lastResult) { setStatus('err', 'Aucun résultat à insérer'); return; }
+  if (!officeReady || typeof Word === 'undefined') {
     setStatus('err', 'Disponible uniquement dans Word');
     return;
   }
-  // On insere apres la selection : on ajoute un saut de ligne avant le texte
-  var toInsert = '\n' + lastResult;
-  Office.context.document.setSelectedDataAsync(
-    toInsert,
-    { coercionType: Office.CoercionType.Text },
-    function(result) {
-      if (result.status === Office.AsyncResultStatus.Succeeded) {
-        setStatus('ok', 'Texte insere apres la selection');
-      } else {
-        // Fallback Word.run si setSelectedDataAsync echoue
-        Word.run(function(ctx) {
-          var range = ctx.document.getSelection();
-          range.load('text');
-          return ctx.sync().then(function() {
-            range.insertText('\n' + lastResult, Word.InsertLocation.after);
-            return ctx.sync();
-          });
-        }).then(function() {
-          setStatus('ok', 'Texte insere');
-        }).catch(function(e) {
-          setStatus('err', 'Erreur insertion : ' + e.message);
-        });
-      }
+
+  Word.run(function(ctx) {
+    var targetRange;
+
+    if (lastImportedText) {
+      // Recherche du texte original pour cibler précisément le range
+      var results = ctx.document.body.search(lastImportedText, {
+        matchCase: false,
+        matchWholeWord: false
+      });
+      results.load('items');
+      return ctx.sync().then(function() {
+        if (results.items.length > 0) {
+          targetRange = results.items[0];
+          // Insérer un nouveau paragraphe après le range trouvé
+          targetRange.insertParagraph(lastResult, Word.InsertLocation.after);
+          return ctx.sync();
+        } else {
+          // Fallback : insérer à la sélection courante
+          return insertAtCurrentSelection(ctx);
+        }
+      });
+    } else {
+      return insertAtCurrentSelection(ctx);
     }
-  );
+  }).then(function() {
+    setStatus('ok', 'Texte inséré après la sélection');
+  }).catch(function(e) {
+    setStatus('err', 'Erreur insertion : ' + e.message);
+  });
 }
 
+function insertAtCurrentSelection(ctx) {
+  var range = ctx.document.getSelection();
+  range.insertParagraph(lastResult, Word.InsertLocation.after);
+  return ctx.sync();
+}
+
+// FIX "Remplacer" :
+// Même problème : la sélection est perdue quand on clique dans le panneau.
+// Solution : retrouver le texte original par recherche (body.search),
+// puis le remplacer avec insertText(Replace).
 function replaceSelection() {
-  if (!lastResult) return;
-  if (typeof Office === 'undefined' || !Office.context || !Office.context.document) {
+  if (!lastResult) { setStatus('err', 'Aucun résultat à insérer'); return; }
+  if (!officeReady || typeof Word === 'undefined') {
     setStatus('err', 'Disponible uniquement dans Word');
     return;
   }
-  Office.context.document.setSelectedDataAsync(
-    lastResult,
-    { coercionType: Office.CoercionType.Text },
-    function(result) {
-      if (result.status === Office.AsyncResultStatus.Succeeded) {
-        setStatus('ok', 'Texte remplacé');
-      } else {
-        setStatus('err', 'Erreur remplacement : ' + (result.error ? result.error.message : 'inconnue'));
-      }
+
+  Word.run(function(ctx) {
+    if (lastImportedText) {
+      // Retrouver le texte original et le remplacer
+      var results = ctx.document.body.search(lastImportedText, {
+        matchCase: false,
+        matchWholeWord: false
+      });
+      results.load('items');
+      return ctx.sync().then(function() {
+        if (results.items.length > 0) {
+          results.items[0].insertText(lastResult, Word.InsertLocation.replace);
+          return ctx.sync();
+        } else {
+          // Fallback : remplacer la sélection courante
+          return replaceCurrentSelection(ctx);
+        }
+      });
+    } else {
+      return replaceCurrentSelection(ctx);
     }
-  );
+  }).then(function() {
+    setStatus('ok', 'Texte remplacé');
+    // Réinitialiser lastImportedText pour éviter de cibler le mauvais texte
+    lastImportedText = '';
+    updateImportIndicator('');
+  }).catch(function(e) {
+    setStatus('err', 'Erreur remplacement : ' + e.message);
+  });
+}
+
+function replaceCurrentSelection(ctx) {
+  var range = ctx.document.getSelection();
+  range.insertText(lastResult, Word.InsertLocation.replace);
+  return ctx.sync();
 }
 
 function copyResult() {
   if (!lastResult) return;
   navigator.clipboard.writeText(lastResult)
     .then(function() { setStatus('ok', 'Copié dans le presse-papiers'); })
-    .catch(function() { setStatus('err', 'Erreur copie'); });
+    .catch(function() {
+      // Fallback pour les contextes sans clipboard API
+      var ta = document.createElement('textarea');
+      ta.value = lastResult;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); setStatus('ok', 'Copié dans le presse-papiers'); }
+      catch(e) { setStatus('err', 'Erreur copie'); }
+      document.body.removeChild(ta);
+    });
 }
 
 // ── HELPERS ──
