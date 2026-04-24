@@ -536,6 +536,13 @@ function importSelection() {
 function buildPrompt(text) {
   var wordCount = text.split(/\s+/).filter(Boolean).length;
   var base = 'Tu es un rédacteur expert en Cahiers des Clauses Techniques Particulières (CCTP) pour des marchés publics français. Tu reformules des clauses techniques avec rigueur et concision.';
+  
+  var mandatoryRules = '\n\nRÈGLES ABSOLUES — à respecter sans exception :\n'
+    + '1. LONGUEUR : environ ' + wordCount + ' mots. Ne jamais dépasser 1,5× la longueur originale.\n'
+    + '2. VERBES D\'OBLIGATION : utiliser exclusivement "doit", "doivent", "est tenu de". Bannir le futur ("sera", "seront", "devra") et l\'infinitif impersonnel.\n'
+    + '3. VOIX ACTIVE obligatoire. Bannir : "il sera procédé à", "il est prévu de", "il sera veillé à", "il sera effectué", "il convient de".\n'
+    + '4. PAS D\'INVENTIONS : ne jamais ajouter de normes, d\'obligations ou de conditions absentes du texte original.\n'
+    + '5. PAS DE FORMULATIONS VAGUES : supprimer "notamment", "en général", "si nécessaire" sauf s\'ils figuraient dans l\'original.\n';
 
   if (currentMode === 'reformulation') {
     var level = document.getElementById('refLevel').value;
@@ -546,25 +553,24 @@ function buildPrompt(text) {
     };
     var levelInstr = levelMap[level] || levelMap.modere;
 
-    return base + '\n\nRÈGLES ABSOLUES — à respecter sans exception :\n'
-      + '1. LONGUEUR : environ ' + wordCount + ' mots. Ne jamais dépasser 1,5× la longueur originale.\n'
-      + '2. VERBES D\'OBLIGATION : utiliser exclusivement "doit", "doivent", "est tenu de". Bannir le futur ("sera", "seront", "devra") et l\'infinitif impersonnel.\n'
-      + '3. VOIX ACTIVE obligatoire. Bannir : "il sera procédé à", "il est prévu de", "il sera veillé à", "il sera effectué", "il convient de".\n'
-      + '4. PAS D\'INVENTIONS : ne jamais ajouter de normes, d\'obligations ou de conditions absentes du texte original.\n'
-      + '5. PAS DE FORMULATIONS VAGUES : supprimer "notamment", "en général", "si nécessaire" sauf s\'ils figuraient dans l\'original.\n'
+    return base + mandatoryRules
       + '6. RÉSULTAT UNIQUEMENT : répondre avec le seul texte reformulé, sans commentaire ni introduction.\n\n'
       + 'Niveau : ' + levelInstr + '\n\n'
       + 'TEXTE ORIGINAL (' + wordCount + ' mots) :\n"""\n' + text + '\n"""';
   }
 
   if (currentMode === 'suggestions') {
-    return base + '\n\nAnalyse les lacunes techniques, juridiques ou rédactionnelles du texte CCTP suivant.\n'
+    return base + mandatoryRules
+      + '6. DANS LES CORRECTIONS : toujours proposer une formulation avec "doit/doivent" et bannir le futur.\n\n'
+      + 'Analyse les lacunes techniques, juridiques ou rédactionnelles du texte CCTP suivant.\n'
       + 'Réponds UNIQUEMENT avec ce JSON strict, sans texte avant ni après :\n'
       + '{"suggestions":[{"type":"CRITIQUE|AMELIORATION|COMPLEMENT","titre":"...","probleme":"...","correction":"..."}]}\n\n'
       + 'TEXTE :\n"""\n' + text + '\n"""';
   }
 
-  return base + '\n\nVérifie la conformité de ce texte par rapport au CCAG Travaux 2021 et au code de la commande publique.\n'
+  return base + mandatoryRules
+    + '6. DANS LES CORRECTIONS : toujours proposer une formulation avec "doit/doivent" et bannir le futur.\n\n'
+    + 'Vérifie la conformité de ce texte par rapport au CCAG Travaux 2021 et au code de la commande publique.\n'
     + 'Indique : 1) résumé de conformité, 2) points non conformes ou à risque, 3) corrections recommandées.\n'
     + 'Sois concis et factuel.\n\nTEXTE :\n"""\n' + text + '\n"""';
 }
