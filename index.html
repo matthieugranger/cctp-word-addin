@@ -589,9 +589,27 @@ function buildPrompt(text) {
       + 'TEXTE :\n"""\n' + text + '\n"""';
   }
 
-  return base + '\n\nVérifie la conformité de ce texte par rapport au CCAG Travaux 2021 et au code de la commande publique.\n'
-    + 'Indique : 1) résumé de conformité, 2) points non conformes ou à risque, 3) corrections recommandées.\n'
-    + 'Sois concis et factuel.\n\nTEXTE :\n"""\n' + text + '\n"""';
+  return base + '\n\nVérifie la conformité de ce texte CCTP par rapport au CCAG Travaux 2021 et au code de la commande publique.\n'
+    + 'Réponds UNIQUEMENT en JSON strict (sans texte avant ni après) :\n'
+    + '{\n'
+    + '  "conformite": "Résumé succinct de la conformité globale",\n'
+    + '  "points_risque": [\n'
+    + '    {"point": "Description du risque ou manque", "impact": "MAJEUR|MINEUR"}\n'
+    + '  ],\n'
+    + '  "corrections": [\n'
+    + '    {"probleme": "Ce qui pose problème", "solution": "Comment corriger", "exemple": "Exemple concret si applicable"}\n'
+    + '  ],\n'
+    + '  "texte_corrige": "Version améliorée du texte avec les corrections appliquées"\n'
+    + '}\n\n'
+    + 'Règles de vérification :\n'
+    + '1. FUTURS INTERDITS : bannir "sera", "seront", "devra", "se chargera" → exiger "doit", "doivent".\n'
+    + '2. VOIX ACTIVE : rejeter "il sera procédé à", "il convient de".\n'
+    + '3. PRECISION : identifier les termes flous (délais, tolérances, conséquences) manquants.\n'
+    + '4. OBLIGATIONS : vérifier que chaque clause précise le responsable, l\'action et la conséquence.\n'
+    + '5. CONFORMITE CCAG : l\'obligation doit être précise et exécutoire (pas "si nécessaire").\n'
+    + '6. DELAIS : identifier les transmissions/constatations sans délai spécifié.\n'
+    + '7. CONSEQUENCES : identifier les anomalies sans conséquences précisées.\n\n'
+    + 'TEXTE A VERIFIER :\n"""\n' + text + '\n"""';
 }
 
 // ── RUN ANALYSIS ──
@@ -673,6 +691,8 @@ function runAnalysis() {
   fetchPromise.then(function(resultText) {
     if (currentMode === 'suggestions') {
       parseSuggestions(resultText);
+    } else if (currentMode === 'verification') {
+      parseVerification(resultText);
     } else {
       lastResult = resultText;
       document.getElementById('result-text').textContent = resultText;
@@ -727,6 +747,87 @@ function parseSuggestions(raw) {
 
 function esc(str) {
   return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── VERIFICATION ──
+function parseVerification(raw) {
+  try {
+    var clean = raw.replace(/```json|```/g, '').trim();
+    var data  = JSON.parse(clean);
+    var container = document.getElementById('result-container');
+    var body = container.querySelector('.card-body');
+    
+    // Sauvegarder le texte corrigé pour les actions d'insertion
+    lastResult = data.texte_corrige || '';
+    
+    // Construire l'affichage structuré
+    var html = '';
+    
+    // 1. Résumé de conformité
+    if (data.conformite) {
+      html += '<div style="margin-bottom:12px;">'
+        + '<strong style="color:var(--egis-bleu-azur);font-size:12px;">✔ Conformité globale</strong>'
+        + '<p style="margin:5px 0 0 0;font-size:12px;line-height:1.5;color:var(--g700);">' + esc(data.conformite) + '</p>'
+        + '</div>';
+    }
+    
+    // 2. Points à risque
+    if (data.points_risque && data.points_risque.length > 0) {
+      html += '<div style="margin-bottom:12px;padding:8px;background:var(--red-l);border-left:3px solid var(--egis-orange);border-radius:4px;">'
+        + '<strong style="color:var(--egis-orange);font-size:12px;">⚠ Points non conformes ou à risque</strong>'
+        + '<ul style="margin:6px 0 0 16px;font-size:11.5px;line-height:1.6;color:var(--g700);">';
+      data.points_risque.forEach(function(p) {
+        var badge = p.impact === 'MAJEUR' ? '<span style="color:var(--egis-orange);font-weight:800;">●</span>' : '<span style="color:var(--g400);">○</span>';
+        html += '<li style="margin:4px 0;">' + badge + ' ' + esc(p.point) + '</li>';
+      });
+      html += '</ul></div>';
+    }
+    
+    // 3. Corrections recommandées
+    if (data.corrections && data.corrections.length > 0) {
+      html += '<div style="margin-bottom:12px;">'
+        + '<strong style="color:var(--egis-vert);font-size:12px;">🔧 Corrections recommandées</strong>'
+        + '<div style="margin-top:6px;">';
+      data.corrections.forEach(function(c) {
+        html += '<div style="margin-bottom:8px;padding:6px;background:var(--green-l);border-radius:4px;border-left:3px solid var(--egis-vert);">'
+          + '<div style="font-size:11.5px;font-weight:600;color:var(--g700);margin-bottom:3px;">' + esc(c.probleme) + '</div>'
+          + '<div style="font-size:11px;color:var(--g700);margin-bottom:3px;">→ ' + esc(c.solution) + '</div>';
+        if (c.exemple) {
+          html += '<div style="font-size:10.5px;color:var(--g400);font-style:italic;margin-top:3px;">Exemple : ' + esc(c.exemple) + '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+    
+    // 4. Texte corrigé (dans une boîte distincte)
+    if (data.texte_corrige) {
+      html += '<div style="margin-top:12px;padding:10px;background:var(--g100);border:1px solid var(--border);border-radius:5px;">'
+        + '<strong style="color:var(--egis-bleu-azur);font-size:11px;text-transform:uppercase;">Texte corrigé</strong>'
+        + '<div id="result-text" style="margin-top:8px;font-size:12px;line-height:1.7;color:var(--black);white-space:pre-wrap;">' 
+        + esc(data.texte_corrige) + '</div>'
+        + '</div>';
+    }
+    
+    body.innerHTML = html + 
+      '<div class="result-actions" style="margin-top:12px;">'
+      + '<button class="btn btn-success btn-sm" id="insert-btn">➕ Insérer le texte corrigé</button>'
+      + '<button class="btn btn-outline-success btn-sm" id="replace-btn">↔ Remplacer</button>'
+      + '<button class="btn btn-ghost btn-sm" id="copy-btn">📋 Copier</button>'
+      + '</div>';
+    
+    // Rebind les boutons d'action
+    document.getElementById('insert-btn').addEventListener('click', insertResult);
+    document.getElementById('replace-btn').addEventListener('click', replaceSelection);
+    document.getElementById('copy-btn').addEventListener('click', copyResult);
+    
+    container.style.display = 'block';
+  } catch(e) {
+    // Fallback : afficher le texte brut si JSON invalide
+    lastResult = raw;
+    document.getElementById('result-text').textContent = raw;
+    document.getElementById('result-container').style.display = 'block';
+  }
 }
 
 // ── WORD ACTIONS ──
