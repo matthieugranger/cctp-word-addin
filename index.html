@@ -476,24 +476,30 @@ function hideResults() {
 }
 
 // ── IMPORT WORD ──
+// Utilise getSelectedDataAsync (API Office commune) plutot que Word.run :
+// Word.run perd parfois la selection quand le focus bascule vers le volet.
 function importSelection() {
-  if (typeof Word === 'undefined') {
+  if (typeof Office === 'undefined' || !Office.context || !Office.context.document) {
     setStatus('err', 'Fonction disponible uniquement dans Word');
     return;
   }
-  Word.run(function(ctx) {
-    var sel = ctx.document.getSelection();
-    sel.load('text');
-    return ctx.sync().then(function() {
-      var txt = sel.text.trim();
-      if (txt) {
-        document.getElementById('input-text').value = txt;
-        setStatus('ok', 'Texte importé (' + txt.length + ' car.)');
+  Office.context.document.getSelectedDataAsync(
+    Office.CoercionType.Text,
+    { valueFormat: Office.ValueFormat.Unformatted },
+    function(result) {
+      if (result.status === Office.AsyncResultStatus.Succeeded) {
+        var txt = (result.value || '').trim();
+        if (txt) {
+          document.getElementById('input-text').value = txt;
+          setStatus('ok', 'Texte importe (' + txt.length + ' car.)');
+        } else {
+          setStatus('err', 'Aucun texte selectionne dans Word');
+        }
       } else {
-        setStatus('err', 'Aucun texte sélectionné dans Word');
+        setStatus('err', 'Erreur import : ' + (result.error ? result.error.message : 'inconnue'));
       }
-    });
-  }).catch(function(e) { setStatus('err', 'Erreur import : ' + e.message); });
+    }
+  );
 }
 
 // ── PROMPT ──
