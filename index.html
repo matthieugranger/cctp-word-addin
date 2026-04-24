@@ -5,30 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CCTP Assistant IA</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@700;800&family=EB+Garamond:wght@400;500&family=Segoe+UI:wght@400;600&display=swap');
 
     :root {
-      --blue:       #0052CC;
-      --blue-light: #E8F0FE;
-      --blue-dark:  #003087;
-      --g100: #F7F8FA;
-      --g200: #EAECEF;
-      --g400: #9AA3B0;
-      --g700: #3D4450;
-      --black:#1A1E2B;
-      --green:#0A7655;
-      --green-l:#E6F4EF;
-      --red:  #C0392B;
-      --red-l:#FDECEA;
-      --border:#D0D5DD;
-      --radius: 7px;
+      /* Palette principale Egis */
+      --egis-bleu-nuit:       #08212C;
+      --egis-vert:            #ABC022;
+      --egis-bleu-azur:       #0099A5;
+      --egis-gris-bleu:       #5D848A;
+      --egis-bleu-canard:     #00617E;
+      --egis-gris-acier:      #97B8BB;
+      --egis-bleu-moyen:      #75A0D2;
+
+      /* Palette complémentaire */
+      --egis-orange:          #F75226;
+      --egis-rouge-coral:     #FA5D5D;
+      --egis-jaune-gold:      #FDC603;
+
+      /* Alias locaux */
+      --blue:       var(--egis-bleu-azur);
+      --blue-light: #E0F7F9;
+      --blue-dark:  var(--egis-bleu-nuit);
+      --g100: #F4F7F8;
+      --g200: #E8EFF0;
+      --g400: var(--egis-gris-bleu);
+      --g700: var(--egis-bleu-nuit);
+      --black: var(--egis-bleu-nuit);
+      --green: var(--egis-vert);
+      --green-l: #F4F8E6;
+      --red:  var(--egis-orange);
+      --red-l: #FEF3F0;
+      --border: var(--egis-gris-acier);
+      --radius: 5px;
       --input-h: 32px;
+
+      /* Typographie */
+      --font-title: 'Urbanist', 'Segoe UI', sans-serif;
+      --font-body: 'EB Garamond', 'Segoe UI', serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'IBM Plex Sans', sans-serif;
+      font-family: var(--font-body);
       font-size: 13px; color: var(--black);
       background: var(--g100);
       height: 100vh; display: flex; flex-direction: column;
@@ -37,17 +56,17 @@
 
     /* ── HEADER ── */
     .header {
-      background: var(--blue-dark); color: white;
+      background: var(--egis-bleu-nuit); color: white;
       padding: 11px 14px;
       display: flex; align-items: center; gap: 10px;
       flex-shrink: 0;
-      border-bottom: 3px solid var(--blue);
+      border-bottom: 3px solid var(--egis-bleu-azur);
     }
     .header-logo {
-      width: 28px; height: 28px; background: var(--blue);
-      border-radius: 6px; display: flex; align-items: center;
-      justify-content: center; font-size: 13px; font-weight: 700;
-      font-family: 'IBM Plex Mono', monospace; flex-shrink: 0;
+      width: 28px; height: 28px; background: var(--egis-vert);
+      border-radius: 4px; display: flex; align-items: center;
+      justify-content: center; font-size: 13px; font-weight: 800;
+      font-family: var(--font-title); flex-shrink: 0;
     }
     .header-title { font-size: 13px; font-weight: 600; line-height: 1.2; }
     .header-sub   { font-size: 10px; color: rgba(255,255,255,.6); margin-top: 1px; }
@@ -105,28 +124,28 @@
       padding: 0 28px 0 10px;
       border: 1px solid var(--border); border-radius: var(--radius);
       background: white; color: var(--black);
-      font-family: 'IBM Plex Sans', sans-serif; font-size: 12px;
+      font-family: var(--font-title); font-size: 12px;
       cursor: pointer;
       transition: border-color .15s, box-shadow .15s;
     }
     select:focus {
-      outline: none; border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(0,82,204,.12);
+      outline: none; border-color: var(--egis-bleu-azur);
+      box-shadow: 0 0 0 3px rgba(0, 153, 165, .12);
     }
-    select:hover { border-color: var(--blue); }
+    select:hover { border-color: var(--egis-bleu-azur); }
 
     /* ── TEXT INPUT ── */
     input[type="text"], input[type="password"] {
       width: 100%; height: var(--input-h);
       padding: 0 10px;
       border: 1px solid var(--border); border-radius: var(--radius);
-      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      font-family: var(--font-title); font-size: 11px;
       color: var(--black); background: white;
       transition: border-color .15s, box-shadow .15s;
     }
     input[type="text"]:focus, input[type="password"]:focus {
-      outline: none; border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(0,82,204,.12);
+      outline: none; border-color: var(--egis-bleu-azur);
+      box-shadow: 0 0 0 3px rgba(0, 153, 165, .1);
     }
 
     /* ── BUTTONS ── */
@@ -134,36 +153,36 @@
       display: inline-flex; align-items: center; justify-content: center;
       gap: 6px; padding: 0 14px; height: var(--input-h);
       border: none; border-radius: var(--radius);
-      font-family: 'IBM Plex Sans', sans-serif; font-size: 12px;
-      font-weight: 600; cursor: pointer;
+      font-family: var(--font-title); font-size: 12px;
+      font-weight: 700; cursor: pointer;
       transition: background .15s, box-shadow .15s, transform .08s;
       white-space: nowrap; flex-shrink: 0;
     }
     .btn:active:not(:disabled) { transform: scale(.97); }
 
-    .btn-primary { background: var(--blue); color: white; }
-    .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+    .btn-primary { background: var(--egis-bleu-azur); color: white; }
+    .btn-primary:hover:not(:disabled) { background: #007A8A; }
     .btn-primary:disabled { background: var(--g400); cursor: not-allowed; opacity: .7; }
 
-    .btn-ghost { background: white; color: var(--g700); border: 1px solid var(--border); }
-    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .btn-ghost { background: white; color: var(--egis-bleu-nuit); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--egis-bleu-azur); color: var(--egis-bleu-azur); background: #E0F7F9; }
 
-    .btn-success { background: var(--green); color: white; }
-    .btn-success:hover { background: #075c43; }
+    .btn-success { background: var(--egis-vert); color: white; }
+    .btn-success:hover { background: #96A81D; }
 
-    .btn-outline-success { background: white; color: var(--green); border: 1.5px solid var(--green); }
+    .btn-outline-success { background: white; color: var(--egis-vert); border: 1.5px solid var(--egis-vert); }
     .btn-outline-success:hover { background: var(--green-l); }
 
     .btn-sm { height: 28px; padding: 0 10px; font-size: 11px; }
 
     #save-api-btn {
-      width: 100%; background: var(--blue); color: white;
+      width: 100%; background: var(--egis-bleu-azur); color: white;
       border: none; border-radius: var(--radius);
-      height: 34px; font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 12px; font-weight: 600; cursor: pointer;
+      height: 34px; font-family: var(--font-title);
+      font-size: 12px; font-weight: 700; cursor: pointer;
       transition: background .15s, transform .08s;
     }
-    #save-api-btn:hover { background: var(--blue-dark); }
+    #save-api-btn:hover { background: #007A8A; }
     #save-api-btn:active { transform: scale(.98); }
 
     /* ── MAIN SCROLL ── */
@@ -198,19 +217,19 @@
       font-size: 11px; color: var(--g400);
       cursor: pointer; transition: color .15s;
     }
-    .mode-tab:hover { color: var(--blue); }
-    .mode-tab.active { color: var(--blue); font-weight: 700; border-bottom-color: var(--blue); background: white; }
+    .mode-tab:hover { color: var(--egis-bleu-azur); }
+    .mode-tab.active { color: var(--egis-bleu-azur); font-weight: 700; border-bottom-color: var(--egis-bleu-azur); background: white; }
 
     /* ── TEXTAREA ── */
     textarea {
       width: 100%; padding: 9px 10px;
       border: 1px solid var(--border); border-radius: var(--radius);
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 12px; line-height: 1.6; color: var(--black);
+      font-family: var(--font-body);
+      font-size: 13px; line-height: 1.6; color: var(--black);
       resize: vertical; min-height: 90px;
       transition: border-color .15s, box-shadow .15s;
     }
-    textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,82,204,.1); }
+    textarea:focus { outline: none; border-color: var(--egis-bleu-azur); box-shadow: 0 0 0 3px rgba(0, 153, 165, .1); }
     textarea::placeholder { color: var(--g400); }
 
     /* ── BTN ROWS ── */
@@ -233,8 +252,8 @@
     .loading-inner { display: flex; align-items: center; gap: 10px; padding: 12px; }
     .spinner {
       width: 18px; height: 18px; flex-shrink: 0;
-      border: 2px solid var(--blue-light);
-      border-top-color: var(--blue);
+      border: 2px solid #E0F7F9;
+      border-top-color: var(--egis-bleu-azur);
       border-radius: 50%;
       animation: spin .7s linear infinite;
     }
@@ -248,21 +267,21 @@
     .suggestion-card { border: 1px solid var(--border); border-radius: 5px; overflow: hidden; margin-bottom: 7px; }
     .suggestion-card:last-child { margin-bottom: 0; }
     .suggestion-header { padding: 6px 10px; background: var(--g100); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 7px; }
-    .suggestion-badge { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: .05em; }
-    .badge-amelioration { background: var(--blue-light); color: var(--blue-dark); }
-    .badge-critique     { background: var(--red-l); color: var(--red); }
-    .suggestion-body { padding: 8px 10px; font-size: 11.5px; line-height: 1.6; }
-    .suggestion-body code { font-family: 'IBM Plex Mono', monospace; background: var(--blue-light); color: var(--blue-dark); padding: 1px 5px; border-radius: 3px; font-size: 10.5px; }
+    .suggestion-badge { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: .05em; font-family: var(--font-title); }
+    .badge-amelioration { background: #E0F7F9; color: var(--egis-bleu-azur); }
+    .badge-critique     { background: var(--red-l); color: var(--egis-orange); }
+    .suggestion-body { padding: 8px 10px; font-size: 11.5px; line-height: 1.6; font-family: var(--font-body); }
+    .suggestion-body code { font-family: var(--font-title); background: #E0F7F9; color: var(--egis-bleu-nuit); padding: 1px 5px; border-radius: 3px; font-size: 10.5px; }
 
     /* ── STATUS BAR ── */
     #status-bar {
       padding: 6px 12px; font-size: 10.5px;
       border-top: 1px solid var(--border); background: white;
       display: flex; align-items: center; gap: 6px;
-      flex-shrink: 0; color: var(--g400);
+      flex-shrink: 0; color: var(--egis-gris-bleu);
     }
-    #status-bar.ok  { color: var(--green); }
-    #status-bar.err { color: var(--red); }
+    #status-bar.ok  { color: var(--egis-vert); }
+    #status-bar.err { color: var(--egis-orange); }
     .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
   </style>
 </head>
@@ -536,13 +555,6 @@ function importSelection() {
 function buildPrompt(text) {
   var wordCount = text.split(/\s+/).filter(Boolean).length;
   var base = 'Tu es un rédacteur expert en Cahiers des Clauses Techniques Particulières (CCTP) pour des marchés publics français. Tu reformules des clauses techniques avec rigueur et concision.';
-  
-  var mandatoryRules = '\n\nRÈGLES ABSOLUES — à respecter sans exception :\n'
-    + '1. LONGUEUR : environ ' + wordCount + ' mots. Ne jamais dépasser 1,5× la longueur originale.\n'
-    + '2. VERBES D\'OBLIGATION : utiliser exclusivement "doit", "doivent", "est tenu de". Bannir le futur ("sera", "seront", "devra") et l\'infinitif impersonnel.\n'
-    + '3. VOIX ACTIVE obligatoire. Bannir : "il sera procédé à", "il est prévu de", "il sera veillé à", "il sera effectué", "il convient de".\n'
-    + '4. PAS D\'INVENTIONS : ne jamais ajouter de normes, d\'obligations ou de conditions absentes du texte original.\n'
-    + '5. PAS DE FORMULATIONS VAGUES : supprimer "notamment", "en général", "si nécessaire" sauf s\'ils figuraient dans l\'original.\n';
 
   if (currentMode === 'reformulation') {
     var level = document.getElementById('refLevel').value;
@@ -553,24 +565,25 @@ function buildPrompt(text) {
     };
     var levelInstr = levelMap[level] || levelMap.modere;
 
-    return base + mandatoryRules
+    return base + '\n\nRÈGLES ABSOLUES — à respecter sans exception :\n'
+      + '1. LONGUEUR : environ ' + wordCount + ' mots. Ne jamais dépasser 1,5× la longueur originale.\n'
+      + '2. VERBES D\'OBLIGATION : utiliser exclusivement "doit", "doivent", "est tenu de". Bannir le futur ("sera", "seront", "devra") et l\'infinitif impersonnel.\n'
+      + '3. VOIX ACTIVE obligatoire. Bannir : "il sera procédé à", "il est prévu de", "il sera veillé à", "il sera effectué", "il convient de".\n'
+      + '4. PAS D\'INVENTIONS : ne jamais ajouter de normes, d\'obligations ou de conditions absentes du texte original.\n'
+      + '5. PAS DE FORMULATIONS VAGUES : supprimer "notamment", "en général", "si nécessaire" sauf s\'ils figuraient dans l\'original.\n'
       + '6. RÉSULTAT UNIQUEMENT : répondre avec le seul texte reformulé, sans commentaire ni introduction.\n\n'
       + 'Niveau : ' + levelInstr + '\n\n'
       + 'TEXTE ORIGINAL (' + wordCount + ' mots) :\n"""\n' + text + '\n"""';
   }
 
   if (currentMode === 'suggestions') {
-    return base + mandatoryRules
-      + '6. DANS LES CORRECTIONS : toujours proposer une formulation avec "doit/doivent" et bannir le futur.\n\n'
-      + 'Analyse les lacunes techniques, juridiques ou rédactionnelles du texte CCTP suivant.\n'
+    return base + '\n\nAnalyse les lacunes techniques, juridiques ou rédactionnelles du texte CCTP suivant.\n'
       + 'Réponds UNIQUEMENT avec ce JSON strict, sans texte avant ni après :\n'
       + '{"suggestions":[{"type":"CRITIQUE|AMELIORATION|COMPLEMENT","titre":"...","probleme":"...","correction":"..."}]}\n\n'
       + 'TEXTE :\n"""\n' + text + '\n"""';
   }
 
-  return base + mandatoryRules
-    + '6. DANS LES CORRECTIONS : toujours proposer une formulation avec "doit/doivent" et bannir le futur.\n\n'
-    + 'Vérifie la conformité de ce texte par rapport au CCAG Travaux 2021 et au code de la commande publique.\n'
+  return base + '\n\nVérifie la conformité de ce texte par rapport au CCAG Travaux 2021 et au code de la commande publique.\n'
     + 'Indique : 1) résumé de conformité, 2) points non conformes ou à risque, 3) corrections recommandées.\n'
     + 'Sois concis et factuel.\n\nTEXTE :\n"""\n' + text + '\n"""';
 }
