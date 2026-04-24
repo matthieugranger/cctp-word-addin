@@ -391,7 +391,7 @@ var lastResult = '';
 var DEFAULT_MODELS = {
   anthropic:  'claude-sonnet-4-20250514',
   groq:       'llama-3.3-70b-versatile',
-  openrouter: 'google/gemini-2.0-flash-001'
+  openrouter: 'openai/gpt-4o-mini'
 };
 
 // ── INIT ──
@@ -636,22 +636,35 @@ function runAnalysis() {
       ? 'https://api.groq.com/openai/v1/chat/completions'
       : 'https://openrouter.ai/api/v1/chat/completions';
 
+    var headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + apiKey
+    };
+
+    // Headers spécifiques à OpenRouter
+    if (currentProvider === 'openrouter') {
+      headers['HTTP-Referer'] = window.location.origin || 'https://cctp-assistant.local';
+      headers['X-Title'] = 'CCTP Assistant IA';
+    }
+
     fetchPromise = fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey,
-        'HTTP-Referer': 'https://cctp-assistant.local',
-        'X-Title': 'CCTP Assistant'
-      },
+      headers: headers,
       body: JSON.stringify({
         model: model,
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.2
+        temperature: 0.2,
+        max_tokens: 1200
       })
     }).then(function(resp) {
       return resp.json().then(function(data) {
-        if (!resp.ok) throw new Error(data.error && data.error.message ? data.error.message : 'Erreur ' + resp.status);
+        if (resp.status === 429) {
+          throw new Error('Trop de requêtes. OpenRouter a un rate limit strict. Attendez quelques secondes et réessayez.');
+        }
+        if (!resp.ok) {
+          var errMsg = data.error && data.error.message ? data.error.message : ('Erreur ' + resp.status);
+          throw new Error(errMsg);
+        }
         return data.choices[0].message.content;
       });
     });
@@ -667,7 +680,16 @@ function runAnalysis() {
     }
     setStatus('ok', 'Analyse terminée');
   }).catch(function(e) {
-    setStatus('err', 'Erreur : ' + e.message);
+    var errMsg = e.message;
+    if (errMsg.includes('429')) {
+      setStatus('err', '⏱️ Rate limit OpenRouter — attendez 30s et réessayez');
+    } else if (errMsg.includes('401') || errMsg.includes('Unauthorized')) {
+      setStatus('err', '🔑 Clé API invalide ou expirée');
+    } else if (errMsg.includes('429')) {
+      setStatus('err', '⏱️ Trop de requêtes — attendez quelques secondes');
+    } else {
+      setStatus('err', 'Erreur : ' + errMsg);
+    }
   }).finally(function() {
     setLoading(false);
   });
